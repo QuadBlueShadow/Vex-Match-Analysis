@@ -1,0 +1,10 @@
+torch
+numpy
+matplotlib
+pandas
+opencv-python
+inference
+yt-dlp
+inference-sdk
+pytesseract
+supervision
