@@ -2,7 +2,6 @@ import cv2
 import yt_dlp
 import pytesseract
 
-
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 video_path = "Videos/MechaR-16-1.mkv"
