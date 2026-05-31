@@ -1,11 +1,11 @@
 from collection import DataCollector
-from pathlib import Path
 # Queue safely passes frames between the image-gathering thread and DataCollector thread.
 from queue import Queue
 # Thread lets image collection and data processing run at the same time.
 from threading import Event, Thread
 import cv2
 import pytesseract
+import time
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
@@ -16,7 +16,7 @@ FRAME_SAMPLE_INTERVAL = 5
 # Stop once this many sampled frames have been collected.
 MAX_IMAGES = 60
 # Number of sampled frames DataCollector sends to the model at a time.
-BATCH_SIZE = 15
+BATCH_SIZE = 5
 # Seconds to wait for each worker during Ctrl+C cleanup before saving what is already collected.
 SHUTDOWN_JOIN_TIMEOUT = 2
 
@@ -40,7 +40,7 @@ def collect_images(cap, frame_queue, stop_event):
                 match_state = pytesseract.image_to_string(match_state).strip()
 
                 # Hand this same frame to the DataCollector thread for analysis.
-                frame_queue.put([frame, match, match_state])
+                frame_queue.put([frame, match, match_state, int(cap.get(cv2.CAP_PROP_POS_FRAMES))])
                 images_saved += 1
 
             index += 1
@@ -87,7 +87,15 @@ print(f"Resolution: {width}x{height}")
 fps = 60
 delay = int(1000 / fps) if fps > 0 else 33  # milliseconds
 
-cap.set(cv2.CAP_PROP_POS_FRAMES, 36_000)
+current_frame = 36_000
+try:
+    with open("TrainingLog.txt", 'r') as file:
+        current_frame = int(file.readlines()[0])
+        print(f"Found checkpoint at {current_frame}")
+except Exception:
+    print("No checkpoint found")
+
+cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
 
 # Thread-safe bridge that lets one thread produce frames and the other consume them.
 frame_queue = Queue()
@@ -114,7 +122,6 @@ try:
 except KeyboardInterrupt:
     print("\nCtrl+C received. Stopping frame collection and saving collected data...")
     stop_event.set()
-    print(int(cap.get(cv2.CAP_PROP_POS_FRAMES)))
     cap.release()
 finally:
     stop_event.set()
@@ -132,4 +139,8 @@ finally:
     if cap.isOpened():
         cap.release()
 
+    collector.flush()
     collector.save_data()
+
+    with open("TrainingLog.txt", 'w') as file:
+        file.writelines(str(collector.frame))
