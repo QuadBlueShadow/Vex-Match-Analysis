@@ -131,6 +131,7 @@ class DataCollector:
     def assign_robots(self, data:list):
         if self.loaded:
             self.loaded = False
+            self.reset_robots = False
 
             old_data = self.previous.iloc[-1]
             self.robots[0].set_position([old_data['x1'], old_data['y1']])
