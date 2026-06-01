@@ -9,3 +9,4 @@ inference-sdk
 pytesseract
 supervision
 psycopg2
+xlrd

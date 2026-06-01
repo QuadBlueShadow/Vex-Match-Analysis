@@ -1,23 +1,14 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from database import DataBase
 
-df = pd.read_csv("MatchData/PRACTICE 1")
-df2 = pd.read_csv("MatchData/PRACTICE 2")
+df = pd.read_csv("MatchData/InnovateDivisionResults.csv")
 
-#images = np.load("TrainingData/Qual32I.npy", allow_pickle=True)
+#print(df[df.isna().any(axis=1)])
 
-print(df.head())
-# df.plot(y='x')
-# df.plot(y='y')
-fig, ax = plt.subplots(2, 1)
-ax[0].scatter(x=df['x4'], y=-df['y4'])
+# l = df.iloc[:, 1:].to_numpy().tolist()
+# print(l)
 
-df = pd.concat([df, df2])
-
-ax[1].scatter(x=df['x4'], y=-df['y4'])
-
-plt.show()
-
-# print(df.head())
-# print(images[0])
+# db = DataBase("InnovateDivision", ["results", "match VARCHAR (25)", "Red_1 VARCHAR (10)", "Red_2 VARCHAR (10)", "Blue_1 VARCHAR (10)", "Blue_2 VARCHAR (10)", "Red_Score INTEGER", "Blue_Score INTEGER", "Winner VARCHAR (5)"])
+# db.insert_data(l, ["match", "Red_1", "Red_2", "Blue_1", "Blue_2", "Red_Score", "Blue_Score", "Winner"], "results")
