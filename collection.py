@@ -1,12 +1,8 @@
 from components import MatchObject
-# Used by DataCollector.flush() to run inference on the frames it has batched.
 from image_proccessing import get_labels
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import statistics
 import os
 import time
+from database import DataBase
 
 class DataCollector:
     def __init__(self, batch_size=20):
@@ -24,26 +20,20 @@ class DataCollector:
         self.images = 0
         self.frame = 0
         self.log = None
-        self.loaded = False
+        self.check_loaded = True
         self.previous = None
+        self.table_parameters = ["x1", "y1", "x2", "y2", "x3", "y3", "x4", "y4"]
+        self.bot_count = 0
 
         for i in range(4):
             self.robots.append(MatchObject())
 
-        try:
-            self.log = pd.read_csv("MatchData/Log", index_col="Match")
-            self.previous = pd.read_csv(f"MatchData/{self.match}")
-            print("Log loaded")
-            self.loaded = True
-        except Exception:
-            print("No match log found")
-            self.log = pd.DataFrame(columns=["Match", "Completed"])
-            self.log.set_index("Match", inplace=True)
-
-        time.sleep(2)
+        self.db = DataBase("InnovateDivision", [self.match.replace(" ", "_").lower(), "x1 FLOAT", "y1 FLOAT", "x2 FLOAT", "y2 FLOAT", "x3 FLOAT", "y3 FLOAT", "x4 FLOAT", "y4 FLOAT"])
 
     def analyze(self, info):
         frame = info[0]
+        if self.match != info[1] and info[2] == "AUTONOMOUS":
+            self.db.change_table([info[1].replace(" ", "_").lower(), "x1 FLOAT", "y1 FLOAT", "x2 FLOAT", "y2 FLOAT", "x3 FLOAT", "y3 FLOAT", "x4 FLOAT", "y4 FLOAT"])
         self.match = info[1]
         match_state = info[2]
         self.frame = info[3]
@@ -59,14 +49,11 @@ class DataCollector:
             # This is called once for each sampled frame received from the image thread.
             self.pending_frames.append(frame)
             self.images += 1
-            self.log.loc[f"{self.match}", "Completed"] = False
 
             # Once a full batch is ready, process it while image collection keeps running.
             if len(self.pending_frames) >= self.batch_size:
                 self.flush()
         elif self.current_match_state == "Done":
-            self.log.loc[f"{self.match}", "Completed"] = True
-
             self.save_data()
 
             self.data = []
@@ -83,10 +70,10 @@ class DataCollector:
                 print(d)
 
     def fix_blobs(self, objects):
-        if len(objects) <= 1:
+        if len(objects) <= 1 or len(objects) == self.bot_count:
             return objects
         
-        cluster_distance = 125
+        cluster_distance = 110
         cluster_distance_sq = cluster_distance ** 2
         clusters = []
 
@@ -129,35 +116,44 @@ class DataCollector:
         return output
     
     def assign_robots(self, data:list):
-        if self.loaded:
-            self.loaded = False
+        if self.check_loaded and len(self.db.get_data(f"SELECT * FROM {self.match.replace(" ", "_").lower()}")) > 0:
+            self.check_loaded = False
             self.reset_robots = False
 
-            old_data = self.previous.iloc[-1]
-            self.robots[0].set_position([old_data['x1'], old_data['y1']])
-            self.robots[1].set_position([old_data['x2'], old_data['y2']])
-            self.robots[2].set_position([old_data['x3'], old_data['y3']])
-            self.robots[3].set_position([old_data['x4'], old_data['y4']])
+            old_data = self.db.get_data(f"SELECT * FROM {self.match.replace(" ", "_").lower()}")[-1]
+            for i in range(0, len(old_data), 2):
+                if old_data[i] != 0:
+                    self.bot_count += 1
+
+            self.robots[0].set_position([old_data[0], old_data[1]])
+            if self.bot_count > 1: self.robots[1].set_position([old_data[2], old_data[3]])
+            if self.bot_count > 2: self.robots[2].set_position([old_data[4], old_data[5]])
+            if self.bot_count > 3: self.robots[3].set_position([old_data[6], old_data[7]])
 
             for i in range(len(data)):
                 smallest:MatchObject = min(self.robots, key=lambda r: r.get_dist(data[i]))
                 smallest.set_position(data[i])
+
+            print(f"Checkpoint found -> Robots: {self.bot_count}, Match: {self.match}")
+            time.sleep(3)
         elif self.reset_robots:
-            left = [d for d in data if d[0] < 700]
-            right = [d for d in data if d[0] > 700]
+            avg_x = sum(d[0] for d in data) / len(data)
+            left = [d for d in data if d[0] < avg_x]
+            right = [d for d in data if d[0] > avg_x]
 
-            self.robots[0].set_position(min(left, key=lambda l: l[1]))
-            self.robots[1].set_position(max(left, key=lambda l: l[1]))
+            if len(left) > 0: self.robots[0].set_position(min(left, key=lambda l: l[1]))
+            if len(left) > 1: self.robots[1].set_position(max(left, key=lambda l: l[1]))
 
-            self.robots[2].set_position(min(right, key=lambda r: r[1]))
-            self.robots[3].set_position(max(right, key=lambda r: r[1]))
+            if len(left) > 0: self.robots[2].set_position(min(right, key=lambda r: r[1]))
+            if len(right) > 1: self.robots[3].set_position(max(right, key=lambda r: r[1]))
 
             self.reset_robots = False
+            self.check_loaded = False
 
-            # for i in range(4):
-            #     print(self.robots[i].get_position())
+            self.bot_count = len(data)
 
-            # time.sleep(20)
+            print(f"Initializing robots -> L: {len(left)}, R: {len(right)}")
+            time.sleep(3)
         else:
             for i in range(len(data)):
                 smallest:MatchObject = min(self.robots, key=lambda r: r.get_dist(data[i]))
@@ -196,14 +192,7 @@ class DataCollector:
             # Show the first collected coordinate row as a quick sanity check.
             print(self.data[0])
 
-        df = pd.DataFrame(self.data)
-        df.columns = ["x1", "y1", "x2", "y2", "x3", "y3", "x4", "y4"]
-
-        if self.log.loc[f"{self.match}", "Completed"] == False:
-            df = pd.concat([self.previous, df])
-
-        df.to_csv(f"MatchData/{self.match}", index=False)
-        self.log.to_csv(f"MatchData/Log")
+        self.db.insert_data(self.data, self.table_parameters, self.match.replace(" ", "_").lower())
     
     def clear_console(self):
         os.system("cls" if os.name == "nt" else "clear")

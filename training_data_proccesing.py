@@ -68,7 +68,7 @@ def run_data_collector(frame_queue, collector):
             frame_queue.task_done()
 
 video_path = "Videos/Practice18.mkv"
-video_path = "https://play.boxcast.com/p/xg5f6cth5ddcmjsvzpsl/v/1080p-byteranges.m3u8?Expires=1780358400&Signature=dn8wSUbvT5qeTPQdN1xW-QEWvlB0hN8b1pYfEFyYWdNdGqQsVD8N65FI-fKKem9ltR0xuc-LRqWLf0z2QI~pFpIc5hh7C6LKJtOAS8Bg~IBm8DuVZi7DbO5kuQVYRf9tOmz2bWqoyrBe~oG1soJKq4CSznL9QKiw~sGCa6KfY3PUChgonSi3l8qlGfbbIg2E2SZkEOz5bbwcuElGBJjNZftQU27xsOH36pNSONwDojZCUuLAYclHHE3HCcrcXRZnzPCZy-~4izW6PJvBjynzo1MP01U-RIlStx4u9LIjNPtnBy6zvkO33zobBklXT3bkRqK3GiQF1Nw1AOpKQDRcZQ__&Key-Pair-Id=APKAJ7GUCBQUK6NTWZCA"
+video_path = "https://play.boxcast.com/p/rndziay1jtjutmz9qynn/v/1080p-byteranges.m3u8?Expires=1780444800&Signature=J4ZTJcqbTQCs~DBeZHiGf~2MY5xfEEKfOnxveuQp41M2kzewyavi-jw2XmKRy58cl8J30wY4iz4fIeDxe7fjIowEE2SPk09P16k-TZ~5vSQOLLtuCHj928DEcSN1pj2pr-YgwP7jjcPSVCPRnEvIA1ryJOhisB0VETUZ78~D6bMwhD4XLicBkhpCQF83ORpdzgSn7XZhpjNLRyDG9aFK0TpMX7Abi7DgOSi8UKesKOwAbdNr-GjluzAXN5sN6dWmfseS8ziRd-U5jTm5wuJCXGkU3sLnxxoY7YJC3MLiwFOjYI9OzpVRCy-2hPP6piiKbWJjHXFoAx9PFKlB8554qg__&Key-Pair-Id=APKAJ7GUCBQUK6NTWZCA"
 
 cap = cv2.VideoCapture(video_path)
 
@@ -87,7 +87,7 @@ print(f"Resolution: {width}x{height}")
 fps = 60
 delay = int(1000 / fps) if fps > 0 else 33  # milliseconds
 
-current_frame = 36_000
+current_frame = 73_180
 try:
     with open("TrainingLog.txt", 'r') as file:
         current_frame = int(file.readlines()[0])
@@ -109,6 +109,8 @@ collector_thread = Thread(target=run_data_collector, args=(frame_queue, collecto
 # Thread that reads frames from the video and queues sampled frames for analysis.
 image_thread = Thread(target=collect_images, args=(cap, frame_queue, stop_event), name="image-collector")
 
+# 121978
+
 try:
     # Start the consumer first so it is ready when frames begin arriving.
     collector_thread.start()
@@ -127,9 +129,9 @@ finally:
     stop_event.set()
 
     if image_thread.is_alive():
-        image_thread.join(timeout=SHUTDOWN_JOIN_TIMEOUT)
+        image_thread.join()
     if collector_thread.is_alive():
-        collector_thread.join(timeout=SHUTDOWN_JOIN_TIMEOUT)
+        collector_thread.join()
 
     if image_thread.is_alive():
         print("Image collection is still stopping; saving the data collected so far.")
@@ -141,6 +143,7 @@ finally:
 
     collector.flush()
     collector.save_data()
+    collector.db.close_connection()
 
     with open("TrainingLog.txt", 'w') as file:
         file.writelines(str(collector.frame))

@@ -20,7 +20,7 @@ def get_youtube():
 
     return video_url
 
-video_path = "https://play.boxcast.com/p/xg5f6cth5ddcmjsvzpsl/v/1080p-byteranges.m3u8?Expires=1780185600&Signature=fovhaj8AP0l0FEbf~QW6OSyGfjl8D56ep7ofkHthT22a--pYubD0TVC3PSTXCGQp8mIYOHqYCyTZymwEDGIo0umq4Tn-4xqdc6UQP2vXj0QOzpTulorMQQag5jcVmfssv--iqPDNhQ3o-e~hvjDHGuK43j2425vWownPXUls~5f25ehBs3BY5wqecViOQUqx-7ALrr2RO8YmsbfSwsAksICbF6N3UWv9D1-EQEsi1DUxv188LhR2T2T9Hi2Adn6uJUG3Zv34k03dY9NMjuvUNqMiqgitnswXU-LtFzOPxJ4m1XjGlWZ5CRPLCj3K8uI5GqQl2tYZLAKVKa0Y9Mg2cw__&Key-Pair-Id=APKAJ7GUCBQUK6NTWZCA"
+video_path = "https://play.boxcast.com/p/rndziay1jtjutmz9qynn/v/1080p-byteranges.m3u8?Expires=1780444800&Signature=J4ZTJcqbTQCs~DBeZHiGf~2MY5xfEEKfOnxveuQp41M2kzewyavi-jw2XmKRy58cl8J30wY4iz4fIeDxe7fjIowEE2SPk09P16k-TZ~5vSQOLLtuCHj928DEcSN1pj2pr-YgwP7jjcPSVCPRnEvIA1ryJOhisB0VETUZ78~D6bMwhD4XLicBkhpCQF83ORpdzgSn7XZhpjNLRyDG9aFK0TpMX7Abi7DgOSi8UKesKOwAbdNr-GjluzAXN5sN6dWmfseS8ziRd-U5jTm5wuJCXGkU3sLnxxoY7YJC3MLiwFOjYI9OzpVRCy-2hPP6piiKbWJjHXFoAx9PFKlB8554qg__&Key-Pair-Id=APKAJ7GUCBQUK6NTWZCA"
 cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
@@ -38,7 +38,7 @@ print(f"Resolution: {width}x{height}")
 fps = 60
 delay = int(1000 / fps) if fps > 0 else 33  # milliseconds
 
-cap.set(cv2.CAP_PROP_POS_FRAMES, 36_000)
+cap.set(cv2.CAP_PROP_POS_FRAMES, 300_000)
 
 index = 0
 while True:
@@ -49,7 +49,7 @@ while True:
 
     #cv2.imshow("Video", frame)
 
-    if index % 500 == 0:
+    if index % 30 == 0:
         # match = frame[0:50, 0:450]
         # #middle = gray_scale(frame[300:800, 700:1200])
         # time = frame[1039:1280, 1670:1920]
