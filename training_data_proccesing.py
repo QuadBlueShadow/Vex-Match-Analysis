@@ -68,7 +68,7 @@ def run_data_collector(frame_queue, collector):
             frame_queue.task_done()
 
 video_path = "Videos/Practice18.mkv"
-video_path = "https://play.boxcast.com/p/rndziay1jtjutmz9qynn/v/1080p-byteranges.m3u8?Expires=1780444800&Signature=J4ZTJcqbTQCs~DBeZHiGf~2MY5xfEEKfOnxveuQp41M2kzewyavi-jw2XmKRy58cl8J30wY4iz4fIeDxe7fjIowEE2SPk09P16k-TZ~5vSQOLLtuCHj928DEcSN1pj2pr-YgwP7jjcPSVCPRnEvIA1ryJOhisB0VETUZ78~D6bMwhD4XLicBkhpCQF83ORpdzgSn7XZhpjNLRyDG9aFK0TpMX7Abi7DgOSi8UKesKOwAbdNr-GjluzAXN5sN6dWmfseS8ziRd-U5jTm5wuJCXGkU3sLnxxoY7YJC3MLiwFOjYI9OzpVRCy-2hPP6piiKbWJjHXFoAx9PFKlB8554qg__&Key-Pair-Id=APKAJ7GUCBQUK6NTWZCA"
+video_path = "https://play.boxcast.com/p/rndziay1jtjutmz9qynn/v/1080p-byteranges.m3u8?Expires=1780617600&Signature=sBFz4sQMCUQhV5Lbr1vNNJwZV4Vc4g2Npp0B3QzUux4kRiKx0u62iR8YNQ1y7c0dG4IEiDycB468fvaN6VR2w3ufSV1LXuAypK4GR3~WkkD3gxY-upKhv1TLvaK2NEGZ8hORJ68I1u4T9CCo5VNey4AjDkzNNgzaUZkRYIGi~-ZKaEJdMOVehqS5i-h87pfNPiqm5i0dncxVN6OtIPXTa~cT7IPeSWYut0afmmbc3pyKWHx6bEJC-oPLu~Sw7fE~T6Bb~s-JEyp5x295JjVaqToeDIFUGj0yInW6ilhXh2mm2xL7wZTIXUR1NDmLqmw9AewUvUFXuLVhucK9vV-N1w__&Key-Pair-Id=APKAJ7GUCBQUK6NTWZCA"
 
 cap = cv2.VideoCapture(video_path)
 
@@ -87,7 +87,7 @@ print(f"Resolution: {width}x{height}")
 fps = 60
 delay = int(1000 / fps) if fps > 0 else 33  # milliseconds
 
-current_frame = 73_180
+current_frame = 88_500
 try:
     with open("TrainingLog.txt", 'r') as file:
         current_frame = int(file.readlines()[0])
@@ -98,7 +98,7 @@ except Exception:
 cap.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
 
 # Thread-safe bridge that lets one thread produce frames and the other consume them.
-frame_queue = Queue()
+frame_queue = Queue(maxsize=50)
 # Lets Ctrl+C ask the image collection thread to stop before saving partial results.
 stop_event = Event()
 # Owns the batching logic and collected x/y coordinate data.

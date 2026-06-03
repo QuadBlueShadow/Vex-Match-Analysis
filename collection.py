@@ -32,11 +32,12 @@ class DataCollector:
 
     def analyze(self, info):
         frame = info[0]
-        if self.match != info[1] and info[2] == "AUTONOMOUS":
-            self.db.change_table([info[1].replace(" ", "_").lower(), "x1 FLOAT", "y1 FLOAT", "x2 FLOAT", "y2 FLOAT", "x3 FLOAT", "y3 FLOAT", "x4 FLOAT", "y4 FLOAT"])
         self.match = info[1]
         match_state = info[2]
         self.frame = info[3]
+
+        if self.current_match_state != "AUTONOMOUS" and match_state == "AUTONOMOUS":
+            self.db.change_table([self.match.replace(" ", "_").lower(), "x1 FLOAT", "y1 FLOAT", "x2 FLOAT", "y2 FLOAT", "x3 FLOAT", "y3 FLOAT", "x4 FLOAT", "y4 FLOAT"])
 
         if self.current_match_state == "AUTONOMOUS" and match_state == "":
             self.current_match_state = "Waiting"
@@ -176,22 +177,14 @@ class DataCollector:
         self.pending_frames = []
 
         for predictions in information:
-            try:
-                robot_data = [[p.x, p.y] for p in predictions if p.class_name == "Robot"]
+            robot_data = [[p.x, p.y] for p in predictions if p.class_name == "Robot"]
 
-                robot_data = self.fix_blobs(robot_data)
-                robot_data = self.assign_robots(robot_data)
-                self.data.append(robot_data)
-
-            except Exception as e:
-                # Some frames may have no predictions, so skip those rows.
-                print('failed')
+            robot_data = self.fix_blobs(robot_data)
+            robot_data = self.assign_robots(robot_data)
+            self.data.append(robot_data)
 
     def save_data(self):
-        if self.data:
-            # Show the first collected coordinate row as a quick sanity check.
-            print(self.data[0])
-
+        self.flush()
         self.db.insert_data(self.data, self.table_parameters, self.match.replace(" ", "_").lower())
     
     def clear_console(self):
