@@ -16,14 +16,16 @@ FRAME_SAMPLE_INTERVAL = 5
 # Stop once this many sampled frames have been collected.
 MAX_IMAGES = 60
 # Number of sampled frames DataCollector sends to the model at a time.
-BATCH_SIZE = 5
+BATCH_SIZE = 8
 # Seconds to wait for each worker during Ctrl+C cleanup before saving what is already collected.
 SHUTDOWN_JOIN_TIMEOUT = 2
 
 def collect_images(cap, frame_queue, stop_event):
     # Runs on its own thread and only handles reading/sampling frames from the video.
-    index = 0
-    images_saved = 0
+    index: int = 0
+    #images_saved: int = 0
+
+    # current_match_state = "None"
 
     try:
         while not stop_event.is_set():
@@ -34,15 +36,16 @@ def collect_images(cap, frame_queue, stop_event):
 
             if index % FRAME_SAMPLE_INTERVAL == 0:
                 match = frame[0:50, 0:450]
-                match_state = frame[1039:1280, 1670:1920]
-
                 match = pytesseract.image_to_string(match).strip()
+
+                match_state = frame[1039:1280, 1670:1920]
                 match_state = pytesseract.image_to_string(match_state).strip()
 
                 # Hand this same frame to the DataCollector thread for analysis.
                 frame_queue.put([frame, match, match_state, int(cap.get(cv2.CAP_PROP_POS_FRAMES))])
-                images_saved += 1
+                # images_saved += 1
 
+            # current_match_state = match_state
             index += 1
     finally:
         stop_event.set()
@@ -67,7 +70,7 @@ def run_data_collector(frame_queue, collector):
             # Mark this queue item as handled.
             frame_queue.task_done()
 
-video_path = "Videos/Practice18.mkv"
+# video_path = "Videos/Practice18.mkv"
 video_path = "https://play.boxcast.com/p/rndziay1jtjutmz9qynn/v/1080p-byteranges.m3u8?Expires=1780617600&Signature=sBFz4sQMCUQhV5Lbr1vNNJwZV4Vc4g2Npp0B3QzUux4kRiKx0u62iR8YNQ1y7c0dG4IEiDycB468fvaN6VR2w3ufSV1LXuAypK4GR3~WkkD3gxY-upKhv1TLvaK2NEGZ8hORJ68I1u4T9CCo5VNey4AjDkzNNgzaUZkRYIGi~-ZKaEJdMOVehqS5i-h87pfNPiqm5i0dncxVN6OtIPXTa~cT7IPeSWYut0afmmbc3pyKWHx6bEJC-oPLu~Sw7fE~T6Bb~s-JEyp5x295JjVaqToeDIFUGj0yInW6ilhXh2mm2xL7wZTIXUR1NDmLqmw9AewUvUFXuLVhucK9vV-N1w__&Key-Pair-Id=APKAJ7GUCBQUK6NTWZCA"
 
 cap = cv2.VideoCapture(video_path)

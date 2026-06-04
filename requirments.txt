@@ -10,3 +10,5 @@ pytesseract
 supervision
 psycopg2
 xlrd
+roboflow
+seaborn

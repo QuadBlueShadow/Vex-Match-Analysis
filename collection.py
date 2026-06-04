@@ -32,6 +32,7 @@ class DataCollector:
 
     def analyze(self, info):
         frame = info[0]
+        match_change = (self.match != info[1]) and (len(self.data) != 0)
         self.match = info[1]
         match_state = info[2]
         self.frame = info[3]
@@ -54,7 +55,7 @@ class DataCollector:
             # Once a full batch is ready, process it while image collection keeps running.
             if len(self.pending_frames) >= self.batch_size:
                 self.flush()
-        elif self.current_match_state == "Done":
+        elif self.current_match_state == "Done" or match_change:
             self.save_data()
 
             self.data = []
@@ -177,7 +178,7 @@ class DataCollector:
         self.pending_frames = []
 
         for predictions in information:
-            robot_data = [[p.x, p.y] for p in predictions if p.class_name == "Robot"]
+            robot_data = [[p.x + p.width / 2, p.y + p.height / 2] for p in predictions if p.class_name == "Robot"]
 
             robot_data = self.fix_blobs(robot_data)
             robot_data = self.assign_robots(robot_data)
